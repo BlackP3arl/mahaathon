@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>mahathon26 Judging</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: event-night scoring desk — quick, confident, legible from a judge's lap
+   IDEA: the judge's score card on the event clipboard, plus the results board on the wall
+   PICTURE: the live score card itself — three big 1–5 rails with a running /15
+   COLOUR and TYPE: the mahathon26 poster — deep navy field, amber for scores, sky-blue labels; Space Grotesk + Figtree
+   LAYOUT: team rail left, score card right; stacks to team picker → card on phones */
+:root{color-scheme:dark;--bg:#0a0c5a;--panel:#12156e;--line:#2a2f8f;--ink:#f4f5ff;--mut:#a9b2ea;--sky:#7fb0ff;--amb:#f7b53b;--ambink:#1a1440;--ok:#5fd4a4;--bad:#ff7a7a}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);background-image:radial-gradient(rgba(255,255,255,.06) 1px,transparent 1px);background-size:22px 22px;color:var(--ink);font:16px/1.5 Figtree,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3,.num{font-family:"Space Grotesk",system-ui,sans-serif}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--amb);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:1240px;margin:0 auto;padding:20px max(4vw,16px) 48px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px}
+.brand{font:700 clamp(34px,5vw,48px)/1 "Space Grotesk";letter-spacing:-.02em;margin:0}
+.brand b{color:var(--amb)}
+.sub{color:var(--mut);margin:6px 0 0;font-size:15px}
+nav{display:flex;flex-wrap:wrap;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px}
+nav a{padding:10px 18px;border-radius:999px;color:var(--mut);text-decoration:none;font-weight:600}
+nav a.on{background:var(--amb);color:var(--ambink)}
+.status{font-size:13px;color:var(--mut);margin:0 0 14px}
+.status.warn{color:var(--amb)}
+.seats{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px}
+.seats span{color:var(--mut);font-size:14px;margin-right:4px}
+.seat{min-height:44px;padding:8px 16px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font-weight:600}
+.seat:disabled{opacity:.55;cursor:not-allowed}
+.seat.on{border-color:var(--amb);box-shadow:inset 0 0 0 1px var(--amb)}
+.seat small{display:block;font-weight:400;color:var(--mut);font-size:13px}
+.grid{display:grid;grid-template-columns:300px minmax(0,1fr);gap:18px;align-items:start}
+.teams{display:flex;flex-direction:column;gap:6px}
+.team{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:8px;align-items:center;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);min-height:48px}
+.team .n{color:var(--sky);font:600 14px "Space Grotesk"}
+.team .t{font-weight:600;font-size:15px;line-height:1.25}
+.team .s{font:600 14px "Space Grotesk";color:var(--mut);white-space:nowrap}
+.team .s.done{color:var(--amb)}
+.team.on{border-color:var(--amb);background:#1a1e86}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:clamp(16px,3vw,28px)}
+.head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:8px}
+.head h2{margin:0;font-size:clamp(24px,3.4vw,34px);line-height:1.1;text-wrap:balance}
+.head .no{color:var(--sky);font:600 15px "Space Grotesk"}
+.who{display:flex;flex-wrap:wrap;gap:6px 22px;margin-top:10px;font-size:15px}
+.who em{font-style:normal;color:var(--sky);font-size:13px;display:block}
+.total{text-align:right}
+.total .num{font-size:56px;line-height:1;font-weight:700;color:var(--amb)}
+.total .num small{font-size:22px;color:var(--mut)}
+.total div:last-child{color:var(--mut);font-size:13px}
+.crit{padding:18px 0;border-bottom:1px solid var(--line)}
+.crit h3{margin:0;font-size:20px}
+.crit p.q{margin:2px 0 12px;color:var(--mut);font-size:15px}
+.rail{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.rail button{min-height:56px;border-radius:12px;border:1px solid var(--line);background:#0d1063;font:700 24px "Space Grotesk";transition:transform .12s}
+.rail button.on{background:var(--amb);color:var(--ambink);border-color:var(--amb)}
+.rail button.lit{background:#3a3270;border-color:#6a5aa8}
+.rail button:active{transform:scale(.96)}
+.desc{margin:10px 0 0;font-size:15px;min-height:1.5em}
+.desc b{color:var(--amb)}
+.joint{display:flex;gap:12px;align-items:center;margin-top:14px;padding:12px 14px;border:1px dashed var(--line);border-radius:12px;cursor:pointer}
+.joint input{width:22px;height:22px;accent-color:var(--amb);flex:none}
+.joint span{font-size:15px}
+label.nl{display:block;margin:18px 0 6px;font-weight:600}
+textarea{width:100%;min-height:84px;background:#0d1063;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:16px;resize:vertical}
+.row{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-top:16px}
+.btn{min-height:44px;padding:10px 18px;border-radius:12px;border:1px solid var(--line);background:#0d1063;font-weight:600}
+.btn.pri{background:var(--amb);color:var(--ambink);border-color:var(--amb)}
+.btn:disabled{opacity:.6}
+details p{font-size:15px;border-top:1px solid var(--line);padding-top:10px}
+.saved{font-size:13px;color:var(--mut)}
+.timer{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:20px;padding:14px;border-radius:14px;background:#0d1063;border:1px solid var(--line)}
+.timer .num{font-size:34px;font-weight:700;min-width:5ch;font-variant-numeric:tabular-nums}
+.timer .num.late{color:var(--amb)}.timer .num.over{color:var(--bad)}
+.timer .lbl{color:var(--mut);font-size:13px;flex:1 1 140px}
+.mobile-pick{display:none}
+/* results */
+.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.pod{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px}
+.pod.first{border-color:var(--amb);background:linear-gradient(160deg,#2a2386,#12156e 60%)}
+.pod .rk{font:700 15px "Space Grotesk";color:var(--sky)}
+.pod.first .rk{color:var(--amb)}
+.pod h3{margin:6px 0 4px;font-size:20px;line-height:1.2}
+.pod .num{font-size:40px;font-weight:700;color:var(--amb);line-height:1}
+.pod .num small{font-size:18px;color:var(--mut)}
+.pod .m{color:var(--mut);font-size:14px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:15px}
+th,td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-size:13px;color:var(--sky);font-weight:600;background:#0f1268}
+th:nth-child(2),td:nth-child(2){text-align:left;white-space:normal;min-width:180px}
+td.tot{font:700 18px "Space Grotesk";color:var(--amb)}
+td .pend{color:var(--mut)}
+.badge{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:#1f3c6e;color:var(--sky);margin-left:6px;vertical-align:middle}
+.note{color:var(--mut);font-size:14px;margin-top:12px}
+.names{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:22px}
+.names input{width:100%;min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#0d1063;font-size:16px}
+.names label{font-size:13px;color:var(--mut)}
+details{margin-top:22px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+summary{cursor:pointer;font-weight:600;min-height:28px}
+details pre{white-space:pre-wrap;color:var(--mut);font-size:13px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--amb);color:var(--ambink);padding:10px 18px;border-radius:999px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+@media(max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}.teams{display:none}.mobile-pick{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;margin-bottom:12px}.mobile-pick button{flex:none;scroll-snap-align:start;min-height:44px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-weight:600;font-size:14px}.mobile-pick button.on{background:var(--amb);color:var(--ambink)}.mobile-pick button.done:not(.on){border-color:var(--amb)}}
+@media(max-width:600px){.podium,.names{grid-template-columns:minmax(0,1fr)}.total .num{font-size:44px}.rail button{min-height:52px;font-size:22px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>
+.login{max-width:440px;margin:6vh auto 0;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:28px}
+.login h2{margin:0 0 4px;font-size:28px}
+.login p{color:var(--mut);margin:0 0 18px;font-size:15px}
+.seatpick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:16px}
+.seatpick button{min-height:52px;border-radius:12px;border:1px solid var(--line);background:#0d1063;font-weight:600}
+.seatpick button.on{background:var(--amb);color:var(--ambink);border-color:var(--amb)}
+.pin{width:100%;min-height:56px;text-align:center;font:700 28px "Space Grotesk";letter-spacing:.3em;background:#0d1063;border:1px solid var(--line);border-radius:12px}
+.err{color:var(--bad);min-height:1.5em;margin:10px 0 0;font-size:15px}
+.me{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:16px}
+.me input{min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#0d1063;font-size:16px;width:220px}
+.me .who2{font-weight:600}
+.btn.wide{width:100%;margin-top:14px;min-height:52px;font-size:17px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 class="brand">mahathon<b>26</b></h1>
+      <p class="sub">Judging desk · 25 November 2026 · Theme: Vaane · 10 teams</p>
+    </div>
+    <nav id="nav" hidden><a href="#score" id="navScore">Score teams</a><a href="#results" id="navRes">Results</a><a href="#" id="logout">Sign out</a></nav>
+  </header>
+
+  <section id="vLogin" hidden>
+    <form class="login" id="loginForm">
+      <h2>Sign in to judge</h2>
+      <p>Choose your seat and enter the 6-digit PIN the organiser gave you. Only you can enter or change your seat's scores.</p>
+      <div class="seatpick" id="seatpick"></div>
+      <label for="pin" class="nl" style="margin-top:0">PIN</label>
+      <input id="pin" class="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" required>
+      <button class="btn pri wide" type="submit" id="loginBtn">Sign in</button>
+      <p class="err" id="loginErr" role="alert"></p>
+    </form>
+  </section>
+
+  <p class="status" id="status" hidden></p>
+
+  <section id="vScore" hidden>
+    <div class="me" id="me"></div>
+    <div class="mobile-pick" id="mpick"></div>
+    <div class="grid">
+      <div class="teams" id="teams"></div>
+      <div class="card" id="card"></div>
+    </div>
+  </section>
+
+  <section id="vRes" hidden>
+    <div class="podium" id="podium"></div>
+    <div class="scroll"><table id="tbl"></table></div>
+    <p class="note">Each judge scores three areas out of 5 (max 15 per judge, 45 per team). Ties are ranked by Functionality, then Wow factor. "Joint" counts the judges who confirmed the product owner and developers presented together. Refreshes every 5 seconds.</p>
+    <div class="row"><span></span><button class="btn" id="copyCsv">Copy results as CSV</button></div>
+    <div id="notes"></div>
+    <details><summary>Scoring guide</summary><pre id="guide"></pre></details>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+{
+const SB="https://ltssroptnptcbeoczslt.supabase.co",KEY="sb_publishable_43cKVj8LEjhd3VL04Bb4BA_csG7kDdD";
+const TEAMS=[
+ {n:1,t:"Issue Classification Management System",d:"Maadh + Dhunnu",o:"Entire office"},
+ {n:2,t:"Training Management System",d:"Nathu + CTO",o:"HR Aisha"},
+ {n:3,t:"Forecast Management System",d:"Shifan + Nazeem",o:"Jeehan"},
+ {n:4,t:"Single Platform SM",d:"Suhail + Mahmood",o:"Ihsaan"},
+ {n:5,t:"Legal AI Assistance",d:"Naif",o:"Leen"},
+ {n:6,t:"Survey Tool",d:"Shaam + Areef",o:"Shamla, Ihsan & Nawa"},
+ {n:7,t:"Goods & Services Requests",d:"Thoha + Liyaaz",o:"Ishaan"},
+ {n:8,t:"Central Notification System",d:"Midhhat + Baasil",o:"Office"},
+ {n:9,t:"CSR Management System",d:"Adam Waheed",o:"Azza"},
+ {n:10,t:"Letter Management System",d:"Mohamed Niyaaz",o:"Juma"}];
+const CRIT=[
+ {k:"wow",t:"Wow factor",q:"A surprising, magical or innovative feature — or a way of presenting it — that made the room say wow.",
+  r:["Nothing beyond what was expected.","A nice touch or two, but nothing surprising.","At least one clever feature that genuinely surprised.","Several innovative moments; the room reacted.","Magical. A feature or delivery nobody saw coming."]},
+ {k:"func",t:"Functionality",q:"How well the solution covers the problem statement.",
+  r:["Barely addresses the problem, or the demo did not run.","Partial: key flows missing or broken.","Core problem covered, with noticeable gaps.","Covers the problem well and works end to end.","Fully solves the problem statement; ready to pilot."]},
+ {k:"pres",t:"Presentation",q:"Clarity of the 10-minute pitch and demo, and how jointly the product owner and developers delivered it.",
+  r:["Unclear, well over time, one presenter only.","Understandable, but carried by one side only.","Clear; both spoke, but it felt like two separate parts.","Joint and well structured, within 10 minutes.","A seamless joint story: owner frames the problem, developers show the fix, clearly built together, on time."]}];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function ls(k,v){try{if(v===undefined)return localStorage.getItem("m26_"+k);if(v===null)localStorage.removeItem("m26_"+k);else localStorage.setItem("m26_"+k,v)}catch(e){}}
+let sess=null;try{sess=JSON.parse(ls("sess")||"null")}catch(e){}
+let my={},myName="",board=null,team=+(ls("team")||1),pickSeat=1,pollH=null;
+const SEATS=[[1,"Judge 1"],[2,"Judge 2"],[3,"Judge 3"],[0,"Organiser"]];
+const sub=s=>!s?0:(s.wow||0)+(s.func||0)+(s.pres||0);
+const complete=s=>!!(s&&s.wow&&s.func&&s.pres);
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove("on"),1800)}
+function status(m,w){const s=$("status");s.hidden=!m;s.textContent=m||"";s.classList.toggle("warn",!!w)}
+
+async function rpc(fn,args){
+  const r=await fetch(SB+"/rest/v1/rpc/"+fn,{method:"POST",headers:{"apikey":KEY,"Content-Type":"application/json"},body:JSON.stringify(args)});
+  if(!r.ok)throw new Error("Server error ("+r.status+")");
+  const j=await r.json();if(j&&j.error)throw Object.assign(new Error(j.error),{auth:true});return j;
+}
+const creds=()=>({p_seat:sess.seat,p_pin:sess.pin});
+const jName=j=>{const x=board&&board.judges&&board.judges.find(v=>v.seat===j);return (x&&x.name)||("Judge "+j)};
+
+/* ---------- routing ---------- */
+function route(){
+  const signed=!!sess;$("vLogin").hidden=signed;$("nav").hidden=!signed;
+  if(!signed){$("vScore").hidden=$("vRes").hidden=true;status("");renderLogin();stopPoll();return}
+  const judge=sess.seat>0;$("navScore").hidden=!judge;
+  const r=!judge||location.hash==="#results";
+  $("vScore").hidden=r;$("vRes").hidden=!r;$("navScore").classList.toggle("on",!r);$("navRes").classList.toggle("on",r);
+  if(r){renderRes();startPoll()}else{stopPoll();renderScore()}
+}
+window.addEventListener("hashchange",route);
+
+/* ---------- login ---------- */
+function renderLogin(){$("seatpick").innerHTML=SEATS.map(([s,l])=>`<button type="button" data-seat="${s}" class="${pickSeat===s?"on":""}">${l}</button>`).join("")}
+$("loginForm").addEventListener("submit",async e=>{
+  e.preventDefault();const pin=$("pin").value.trim();$("loginErr").textContent="";
+  if(!/^\d{6}$/.test(pin)){$("loginErr").textContent="Enter the 6-digit PIN.";return}
+  $("loginBtn").disabled=true;$("loginBtn").textContent="Checking…";
+  try{
+    if(pickSeat===0){await rpc("get_board",{p_seat:0,p_pin:pin})}
+    else{const j=await rpc("judge_login",{p_seat:pickSeat,p_pin:pin});loadMine(j)}
+    sess={seat:pickSeat,pin};ls("sess",JSON.stringify(sess));$("pin").value="";
+    location.hash=pickSeat?"#score":"#results";route();
+  }catch(err){$("loginErr").textContent=err.message}
+  finally{$("loginBtn").disabled=false;$("loginBtn").textContent="Sign in"}
+});
+function loadMine(j){my={};myName=j.name||"";(j.scores||[]).forEach(s=>my[s.team]=s)}
+function signOut(msg){sess=null;ls("sess",null);my={};board=null;history.replaceState(null,"",location.pathname);route();if(msg)$("loginErr").textContent=msg}
+
+/* ---------- scoring ---------- */
+function renderScore(){
+  $("me").innerHTML=`<span class="who2">Judge ${sess.seat}</span><label for="myname" class="saved">Your name</label><input id="myname" value="${esc(myName)}" placeholder="Shown on the results" maxlength="40"><span class="saved">${TEAMS.filter(t=>complete(my[t.n])).length}/10 teams scored</span>`;
+  $("teams").innerHTML=TEAMS.map(t=>{const s=my[t.n];return`<button class="team${t.n===team?" on":""}" data-t="${t.n}"><span class="n">${String(t.n).padStart(2,"0")}</span><span class="t">${esc(t.t)}</span><span class="s${complete(s)?" done":""}">${s&&sub(s)?sub(s)+"/15":"—"}</span></button>`}).join("");
+  $("mpick").innerHTML=TEAMS.map(t=>`<button class="${t.n===team?"on ":""}${complete(my[t.n])?"done":""}" data-t="${t.n}">${t.n}. ${esc(t.t.split(" ").slice(0,2).join(" "))}</button>`).join("");
+  const T=TEAMS[team-1],s=my[team]||{};
+  $("card").innerHTML=`<div class="head"><div><div class="no">Team ${String(T.n).padStart(2,"0")}</div><h2>${esc(T.t)}</h2>
+   <div class="who"><div><em>Developers</em>${esc(T.d)}</div><div><em>Product owner</em>${esc(T.o)}</div></div></div>
+   <div class="total"><div class="num">${sub(s)}<small>/15</small></div><div>${esc(myName||"Judge "+sess.seat)}</div></div></div>`+
+   CRIT.map(c=>{const v=s[c.k]||0;return`<div class="crit"><h3>${c.t}</h3><p class="q">${c.q}</p>
+    <div class="rail" role="radiogroup" aria-label="${c.t}">${[1,2,3,4,5].map(i=>`<button role="radio" aria-checked="${v===i}" class="${v===i?"on":v>i?"lit":""}" data-c="${c.k}" data-v="${i}">${i}</button>`).join("")}</div>
+    <p class="desc">${v?`<b>${v} —</b> ${esc(c.r[v-1])}`:'<span style="color:var(--mut)">Not scored yet.</span>'}</p>
+    ${c.k==="pres"?`<label class="joint"><input type="checkbox" id="joint" ${s.joint?"checked":""}><span>Product owner and developers presented <strong>jointly</strong> and it felt built together</span></label>`:""}</div>`}).join("")+
+   `<label class="nl" for="note">Private notes (only you and the organiser see these)</label><textarea id="note" maxlength="1000" placeholder="What stood out, questions for the team…">${esc(s.note||"")}</textarea>
+   <div class="row"><span class="saved" id="saved">${s.updated_at?"Saved "+new Date(s.updated_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"Scores save as you tap."}</span>
+   <span><button class="btn" id="prev">Previous</button> <button class="btn pri" id="next">Next team</button></span></div>
+   <div class="timer"><span class="num" id="clock">10:00</span><span class="lbl">Presentation timer · 10 minutes for pitch and demo</span>
+   <button class="btn" id="tGo">Start</button><button class="btn" id="tReset">Reset</button></div>`;
+  drawClock();
+}
+let q=Promise.resolve();
+function save(t,patch){
+  const cur=my[t]||{team:t,wow:0,func:0,pres:0,joint:false,note:""};
+  const next={...cur,...patch};my[t]=next;
+  const el=$("saved");if(el)el.textContent="Saving…";
+  q=q.then(()=>rpc("save_score",{...creds(),p_team:t,p_wow:next.wow||0,p_func:next.func||0,p_pres:next.pres||0,p_joint:!!next.joint,p_note:next.note||""}))
+   .then(r=>{if(my[t])my[t].updated_at=r.at;const e=$("saved");if(e&&t===team)e.textContent="Saved to the server";status("")})
+   .catch(err=>{if(err.auth)signOut(err.message);else status("Not saved — check the connection. Tap the score again to retry. ("+err.message+")",true)});
+}
+document.addEventListener("click",e=>{
+  if(e.target.id==="logout"){e.preventDefault();signOut();return}
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.seat!==undefined){pickSeat=+b.dataset.seat;renderLogin();$("pin").focus()}
+  else if(b.dataset.t){team=+b.dataset.t;ls("team",team);renderScore();if(innerWidth<860)$("card").scrollIntoView({behavior:"smooth",block:"start"})}
+  else if(b.dataset.c){save(team,{[b.dataset.c]:+b.dataset.v});renderScore()}
+  else if(b.id==="next"||b.id==="prev"){team=((team-1+(b.id==="next"?1:9))%10)+1;ls("team",team);renderScore();window.scrollTo({top:0,behavior:"smooth"})}
+  else if(b.id==="tGo"){clk.run?pauseClk():startClk()}
+  else if(b.id==="tReset"){pauseClk();clk.left=600;drawClock()}
+  else if(b.id==="copyCsv")copyCsv();
+});
+document.addEventListener("change",e=>{
+  if(e.target.id==="joint")save(team,{joint:e.target.checked});
+  if(e.target.id==="myname"){myName=e.target.value.trim().slice(0,40);rpc("set_name",{...creds(),p_name:myName}).then(()=>toast("Name saved")).catch(err=>err.auth?signOut(err.message):toast("Name not saved"))}
+});
+let nt;document.addEventListener("input",e=>{if(e.target.id==="note"){clearTimeout(nt);const v=e.target.value.slice(0,1000),t=team;nt=setTimeout(()=>save(t,{note:v}),700)}});
+
+/* ---------- timer ---------- */
+const clk={left:600,run:false,h:null,last:0};
+function startClk(){clk.run=true;clk.last=Date.now();clk.h=setInterval(()=>{const n=Date.now();clk.left-=(n-clk.last)/1000;clk.last=n;drawClock()},250);drawClock()}
+function pauseClk(){clk.run=false;clearInterval(clk.h);drawClock()}
+function drawClock(){const c=$("clock");if(!c)return;const l=Math.round(clk.left),a=Math.abs(l);c.textContent=(l<0?"+":"")+Math.floor(a/60)+":"+String(a%60).padStart(2,"0");c.className="num"+(l<0?" over":l<=120?" late":"");const g=$("tGo");if(g)g.textContent=clk.run?"Pause":"Start"}
+
+/* ---------- results ---------- */
+function startPoll(){if(pollH)return;fetchBoard();pollH=setInterval(fetchBoard,5000)}
+function stopPoll(){clearInterval(pollH);pollH=null}
+async function fetchBoard(){
+  if(!sess)return;
+  try{board=await rpc("get_board",creds());status("");renderRes()}
+  catch(err){if(err.auth)signOut(err.message);else status("Can't reach the server — retrying…",true)}
+}
+function standings(){
+  const sc={};((board&&board.scores)||[]).forEach(s=>sc[s.seat+"_"+s.team]=s);
+  return TEAMS.map(t=>{const js=[1,2,3].map(j=>sc[j+"_"+t.n]||null);
+    const sum=k=>js.reduce((a,s)=>a+(s?s[k]||0:0),0);
+    return{...t,js,total:js.reduce((a,s)=>a+sub(s),0),wow:sum("wow"),func:sum("func"),pres:sum("pres"),joint:js.filter(s=>s&&s.joint).length,n:js.filter(complete).length}
+  }).sort((a,b)=>b.total-a.total||b.func-a.func||b.wow-a.wow||a.n-b.n);
+}
+function renderRes(){
+  if(!board){$("podium").innerHTML='<div class="pod" style="grid-column:1/-1"><h3>Loading results…</h3></div>';$("tbl").innerHTML="";return}
+  const st=standings();let rank=0,prev=null;
+  st.forEach((r,i)=>{const sig=r.total+"_"+r.func+"_"+r.wow;if(sig!==prev)rank=i+1;r.rank=rank;prev=sig});
+  const any=st.some(r=>r.total>0);
+  $("podium").innerHTML=any?st.slice(0,3).map((r,i)=>`<div class="pod${i===0?" first":""}"><div class="rk">${["1st","2nd","3rd"][r.rank-1]||r.rank+"th"} place</div><h3>${esc(r.t)}</h3><div class="num">${r.total}<small>/45</small></div><div class="m">${r.n}/3 judges complete · ${esc(r.d)}</div></div>`).join(""):'<div class="pod" style="grid-column:1/-1"><h3>No scores yet</h3><div class="m">Rankings appear here as soon as the first judge taps a score.</div></div>';
+  $("tbl").innerHTML=`<thead><tr><th>#</th><th>Team</th>${[1,2,3].map(j=>`<th>${esc(jName(j))}</th>`).join("")}<th>Wow</th><th>Function</th><th>Presentation</th><th>Joint</th><th>Total /45</th></tr></thead><tbody>`+
+   st.map(r=>`<tr><td>${r.total?r.rank:"–"}</td><td>${esc(r.t)}${r.n<3?`<span class="badge">${r.n}/3</span>`:""}</td>${r.js.map(s=>`<td>${s&&sub(s)?sub(s)+(complete(s)?"":"*"):'<span class="pend">–</span>'}</td>`).join("")}<td>${r.wow}</td><td>${r.func}</td><td>${r.pres}</td><td>${r.joint}/3</td><td class="tot">${r.total}</td></tr>`).join("")+"</tbody>";
+  const notes=(board.scores||[]).filter(s=>s.note).sort((a,b)=>a.team-b.team||a.seat-b.seat);
+  const open=$("notes").querySelector("details");const wasOpen=open&&open.open;
+  $("notes").innerHTML=notes.length?`<details${wasOpen?" open":""}><summary>Judges' notes${sess.seat===0?"":" (yours)"}</summary>${notes.map(n=>`<p><strong>${esc(TEAMS[n.team-1].t)}</strong> · ${esc(jName(n.seat))}<br>${esc(n.note)}</p>`).join("")}</details>`:"";
+  $("guide").textContent=CRIT.map(c=>c.t+" — "+c.q+"\n"+c.r.map((x,i)=>"  "+(i+1)+": "+x).join("\n")).join("\n\n")+"\n\n* next to a judge's score = that judge has not scored all three areas yet.";
+}
+async function copyCsv(){
+  const qq=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  const rows=[["Rank","Team","Developers","Product owner",...[1,2,3].map(jName),"Wow","Functionality","Presentation","Joint","Total /45"]];
+  standings().forEach((r,i)=>rows.push([i+1,r.t,r.d,r.o,...r.js.map(s=>s?sub(s):""),r.wow,r.func,r.pres,r.joint,r.total]));
+  try{await navigator.clipboard.writeText(rows.map(r=>r.map(qq).join(",")).join("\n"));toast("Results copied")}catch(e){toast("Copy was blocked by the browser")}
+}
+
+/* ---------- start ---------- */
+(async()=>{
+  if(sess&&sess.seat>0){try{loadMine(await rpc("judge_login",creds()))}catch(err){if(err.auth){signOut(err.message);return}status("Can't reach the server — check the connection.",true)}}
+  route();
+})();
+}
+</script>
+</body>
+</html>
