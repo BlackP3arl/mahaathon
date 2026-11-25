@@ -132,6 +132,16 @@ details pre{white-space:pre-wrap;color:var(--mut);font-size:13px}
 .pinrow input{min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#0d1063;font:600 18px "Space Grotesk";letter-spacing:.15em;width:100%}
 .pinrow .lab{font-weight:600}.pinrow .lab small{display:block;color:var(--mut);font-weight:400;font-size:13px}
 @media(max-width:600px){.pinrow{grid-template-columns:minmax(0,1fr) auto auto}.pinrow .lab{grid-column:1/-1}}
+.howto{margin:0 0 16px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 18px}
+.howto summary{font:600 17px "Space Grotesk"}
+.howto summary span{color:var(--mut);font:400 14px Figtree;margin-left:8px}
+.howto ol{margin:12px 0 4px;padding-left:20px;display:grid;gap:8px;font-size:15px;max-width:78ch}
+.howto li::marker{color:var(--amb);font-weight:700}
+.howto b{color:var(--amb);font-weight:600}
+.scale{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:6px 0 2px}
+.scale div{background:#0d1063;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-size:13px;color:var(--mut);text-align:center}
+.scale strong{display:block;font:700 18px "Space Grotesk";color:var(--ink)}
+@media(max-width:600px){.scale{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.scale div{padding:6px 2px;font-size:12px}}
 .btn.wide{width:100%;margin-top:14px;min-height:52px;font-size:17px}
 </style>
 </head>
@@ -161,6 +171,19 @@ details pre{white-space:pre-wrap;color:var(--mut);font-size:13px}
 
   <section id="vScore" hidden>
     <div class="me" id="me"></div>
+    <details class="howto" id="howto">
+      <summary>How to score <span>1 minute read</span></summary>
+      <ol>
+        <li>Score each team <b>straight after their demo</b>, on three areas, 1 to 5 each. That's 15 from you, 45 per team across the three judges.</li>
+        <li><b>Wow factor</b>: something surprising, innovative or magical, in the product itself or in how it was shown.</li>
+        <li><b>Functionality</b>: how well it solves the product owner's problem statement. Score what you saw working, not what was promised.</li>
+        <li><b>Presentation</b>: 10 minutes for pitch and demo. A joint delivery by the product owner and developers scores higher; if only one side presented, give 2 at most. Tick <b>presented jointly</b> when it felt built together.</li>
+        <li>Use the whole scale and keep 5 for the truly outstanding:
+          <div class="scale"><div><strong>1</strong>Weak</div><div><strong>2</strong>Below par</div><div><strong>3</strong>Solid</div><div><strong>4</strong>Strong</div><div><strong>5</strong>Outstanding</div></div>
+          Tap a number to see what it means for that area.</li>
+        <li>Scores save as you tap and only you can change yours. Jot a note on each team: it helps when the judges compare. Ties go to the higher Functionality, then Wow factor.</li>
+      </ol>
+    </details>
     <div class="mobile-pick" id="mpick"></div>
     <div class="grid">
       <div class="teams" id="teams"></div>
@@ -248,7 +271,9 @@ function loadMine(j){my={};myName=j.name||"";(j.scores||[]).forEach(s=>my[s.team
 function signOut(msg){const pp=$("pins");if(pp){pp.dataset.ready="";pp.innerHTML=""}sess=null;ls("sess",null);my={};board=null;history.replaceState(null,"",location.pathname);route();if(msg)$("loginErr").textContent=msg}
 
 /* ---------- scoring ---------- */
+function initHowto(){const h=$("howto");if(!h||h.dataset.init)return;h.dataset.init="1";h.open=ls("howto")!=="seen";h.addEventListener("toggle",()=>{if(!h.open)ls("howto","seen")})}
 function renderScore(){
+  initHowto();
   $("me").innerHTML=`<span class="who2">Judge ${sess.seat}</span><label for="myname" class="saved">Your name</label><input id="myname" value="${esc(myName)}" placeholder="Shown on the results" maxlength="40"><span class="saved">${TEAMS.filter(t=>complete(my[t.n])).length}/10 teams scored</span>`;
   $("teams").innerHTML=TEAMS.map(t=>{const s=my[t.n];return`<button class="team${t.n===team?" on":""}" data-t="${t.n}"><span class="n">${String(t.n).padStart(2,"0")}</span><span class="t">${esc(t.t)}</span><span class="s${complete(s)?" done":""}">${s&&sub(s)?sub(s)+"/15":"—"}</span></button>`}).join("");
   $("mpick").innerHTML=TEAMS.map(t=>`<button class="${t.n===team?"on ":""}${complete(my[t.n])?"done":""}" data-t="${t.n}">${t.n}. ${esc(t.t.split(" ").slice(0,2).join(" "))}</button>`).join("");
