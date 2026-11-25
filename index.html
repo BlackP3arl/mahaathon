@@ -125,6 +125,13 @@ details pre{white-space:pre-wrap;color:var(--mut);font-size:13px}
 .me{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:16px}
 .me input{min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#0d1063;font-size:16px;width:220px}
 .me .who2{font-weight:600}
+.pins{margin-top:22px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.pins h3{margin:0 0 4px;font-size:20px}
+.pins p{margin:0 0 12px;color:var(--mut);font-size:14px}
+.pinrow{display:grid;grid-template-columns:150px minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.pinrow input{min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#0d1063;font:600 18px "Space Grotesk";letter-spacing:.15em;width:100%}
+.pinrow .lab{font-weight:600}.pinrow .lab small{display:block;color:var(--mut);font-weight:400;font-size:13px}
+@media(max-width:600px){.pinrow{grid-template-columns:minmax(0,1fr) auto auto}.pinrow .lab{grid-column:1/-1}}
 .btn.wide{width:100%;margin-top:14px;min-height:52px;font-size:17px}
 </style>
 </head>
@@ -167,6 +174,7 @@ details pre{white-space:pre-wrap;color:var(--mut);font-size:13px}
     <p class="note">Each judge scores three areas out of 5 (max 15 per judge, 45 per team). Ties are ranked by Functionality, then Wow factor. "Joint" counts the judges who confirmed the product owner and developers presented together. Refreshes every 5 seconds.</p>
     <div class="row"><span></span><button class="btn" id="copyCsv">Copy results as CSV</button></div>
     <div id="notes"></div>
+    <div class="pins" id="pins" hidden></div>
     <details><summary>Scoring guide</summary><pre id="guide"></pre></details>
   </section>
 </div>
@@ -237,7 +245,7 @@ $("loginForm").addEventListener("submit",async e=>{
   finally{$("loginBtn").disabled=false;$("loginBtn").textContent="Sign in"}
 });
 function loadMine(j){my={};myName=j.name||"";(j.scores||[]).forEach(s=>my[s.team]=s)}
-function signOut(msg){sess=null;ls("sess",null);my={};board=null;history.replaceState(null,"",location.pathname);route();if(msg)$("loginErr").textContent=msg}
+function signOut(msg){const pp=$("pins");if(pp){pp.dataset.ready="";pp.innerHTML=""}sess=null;ls("sess",null);my={};board=null;history.replaceState(null,"",location.pathname);route();if(msg)$("loginErr").textContent=msg}
 
 /* ---------- scoring ---------- */
 function renderScore(){
@@ -278,6 +286,8 @@ document.addEventListener("click",e=>{
   else if(b.id==="tGo"){clk.run?pauseClk():startClk()}
   else if(b.id==="tReset"){pauseClk();clk.left=600;drawClock()}
   else if(b.id==="copyCsv")copyCsv();
+  else if(b.dataset.gen!==undefined){$("np"+b.dataset.gen).value=String(Math.floor(Math.random()*1e6)).padStart(6,"0")}
+  else if(b.dataset.setpin!==undefined)setPin(+b.dataset.setpin);
 });
 document.addEventListener("change",e=>{
   if(e.target.id==="joint")save(team,{joint:e.target.checked});
@@ -317,7 +327,27 @@ function renderRes(){
   const notes=(board.scores||[]).filter(s=>s.note).sort((a,b)=>a.team-b.team||a.seat-b.seat);
   const open=$("notes").querySelector("details");const wasOpen=open&&open.open;
   $("notes").innerHTML=notes.length?`<details${wasOpen?" open":""}><summary>Judges' notes${sess.seat===0?"":" (yours)"}</summary>${notes.map(n=>`<p><strong>${esc(TEAMS[n.team-1].t)}</strong> · ${esc(jName(n.seat))}<br>${esc(n.note)}</p>`).join("")}</details>`:"";
+  renderPins();
   $("guide").textContent=CRIT.map(c=>c.t+" — "+c.q+"\n"+c.r.map((x,i)=>"  "+(i+1)+": "+x).join("\n")).join("\n\n")+"\n\n* next to a judge's score = that judge has not scored all three areas yet.";
+}
+function renderPins(){
+  const p=$("pins"),org=sess&&sess.seat===0;p.hidden=!org;
+  if(!org){p.innerHTML="";p.dataset.ready="";return}
+  const rows=[1,2,3].map(j=>({seat:j,label:"Judge "+j,name:jName(j)!==("Judge "+j)?jName(j):""})).concat([{seat:0,label:"Organiser",name:"Your own PIN"}]);
+  if(p.dataset.ready){rows.forEach(r=>{const el=p.querySelector(`[data-pinname="${r.seat}"]`);if(el)el.textContent=r.name||"No name yet"});return}
+  p.dataset.ready="1";
+  p.innerHTML=`<h3>Judge PINs</h3><p>Set a new 6-digit PIN for any seat. It works at once, the old PIN stops working, and a locked seat is unlocked. PINs are stored only as hashes, so the current ones can't be shown.</p>`+
+   rows.map(r=>`<div class="pinrow"><div class="lab">${r.label}<small data-pinname="${r.seat}">${esc(r.name||"No name yet")}</small></div>
+   <input id="np${r.seat}" inputmode="numeric" maxlength="6" pattern="[0-9]*" placeholder="New PIN" autocomplete="off" aria-label="New PIN for ${r.label}">
+   <button class="btn" data-gen="${r.seat}">Random</button><button class="btn pri" data-setpin="${r.seat}">Set</button></div>`).join("");
+}
+async function setPin(target){
+  const inp=$("np"+target),v=inp.value.trim();
+  if(!/^\d{6}$/.test(v)){toast("PIN must be 6 digits");inp.focus();return}
+  try{await rpc("set_pin",{...creds(),p_target:target,p_new_pin:v});
+    if(target===0){sess.pin=v;ls("sess",JSON.stringify(sess))}
+    toast((target?"Judge "+target:"Your")+" PIN set to "+v);inp.value="";
+  }catch(err){if(err.auth&&/Wrong PIN|Too many/.test(err.message))signOut(err.message);else toast(err.message)}
 }
 async function copyCsv(){
   const qq=v=>'"'+String(v).replace(/"/g,'""')+'"';
