@@ -143,6 +143,14 @@ details pre{white-space:pre-wrap;color:var(--mut);font-size:13px}
 .scale strong{display:block;font:700 18px "Space Grotesk";color:var(--ink)}
 @media(max-width:600px){.scale{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.scale div{padding:6px 2px;font-size:12px}}
 .dl{display:flex;flex-wrap:wrap;gap:8px}
+.danger{margin-top:22px;border:1px solid #6b2a4a;background:#1a0f4f;border-radius:14px;padding:16px 18px}
+.danger h3{margin:0 0 4px;font-size:20px}
+.danger p{margin:0 0 12px;color:var(--mut);font-size:14px;max-width:70ch}
+.danger .line{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.danger input[type=text]{min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#0d1063;font:600 16px "Space Grotesk";letter-spacing:.1em;width:150px}
+.danger label.ck{display:flex;gap:8px;align-items:center;font-size:15px;min-height:44px}
+.danger label.ck input{width:20px;height:20px;accent-color:var(--amb)}
+.btn.red{background:#ff7a7a;color:#2a0b16;border-color:#ff7a7a}
 .btn.wide{width:100%;margin-top:14px;min-height:52px;font-size:17px}
 </style>
 </head>
@@ -199,6 +207,16 @@ details pre{white-space:pre-wrap;color:var(--mut);font-size:13px}
     <div class="row"><span class="saved">Download for Excel or Google Sheets</span><span class="dl"><button class="btn pri" id="dlCsv">Download results (.csv)</button> <button class="btn" id="dlDetail">Detailed scores (.csv)</button> <button class="btn" id="copyCsv">Copy</button></span></div>
     <div id="notes"></div>
     <div class="pins" id="pins" hidden></div>
+    <div class="danger" id="clear" hidden>
+      <h3>Clear all scores</h3>
+      <p>Removes every judge's scores and notes so final scoring can start fresh. Download the CSVs first if you want a copy. Cleared scores are kept in a backup on the server, and judges' screens empty themselves automatically.</p>
+      <div class="line">
+        <input type="text" id="clearWord" placeholder="Type CLEAR" autocomplete="off" aria-label="Type CLEAR to confirm">
+        <label class="ck"><input type="checkbox" id="clearNames"> Also reset judge names</label>
+        <button class="btn red" id="clearBtn">Clear all scores</button>
+      </div>
+      <p class="saved" id="clearInfo" style="margin:10px 0 0"></p>
+    </div>
     <details><summary>Scoring guide</summary><pre id="guide"></pre></details>
   </section>
 </div>
@@ -228,7 +246,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function ls(k,v){try{if(v===undefined)return localStorage.getItem("m26_"+k);if(v===null)localStorage.removeItem("m26_"+k);else localStorage.setItem("m26_"+k,v)}catch(e){}}
 let sess=null;try{sess=JSON.parse(ls("sess")||"null")}catch(e){}
-let my={},myName="",board=null,team=+(ls("team")||1),pickSeat=1,pollH=null;
+let my={},myName="",round=null,mineH=null,board=null,team=+(ls("team")||1),pickSeat=1,pollH=null;
 const SEATS=[[1,"Judge 1"],[2,"Judge 2"],[3,"Judge 3"],[0,"Organiser"]];
 const sub=s=>!s?0:(s.wow||0)+(s.func||0)+(s.pres||0);
 const complete=s=>!!(s&&s.wow&&s.func&&s.pres);
@@ -250,7 +268,7 @@ function route(){
   const judge=sess.seat>0;$("navScore").hidden=!judge;
   const r=!judge||location.hash==="#results";
   $("vScore").hidden=r;$("vRes").hidden=!r;$("navScore").classList.toggle("on",!r);$("navRes").classList.toggle("on",r);
-  if(r){renderRes();startPoll()}else{stopPoll();renderScore()}
+  if(r){stopMinePoll();renderRes();startPoll()}else{stopPoll();renderScore();startMinePoll()}
 }
 window.addEventListener("hashchange",route);
 
@@ -268,8 +286,17 @@ $("loginForm").addEventListener("submit",async e=>{
   }catch(err){$("loginErr").textContent=err.message}
   finally{$("loginBtn").disabled=false;$("loginBtn").textContent="Sign in"}
 });
-function loadMine(j){my={};myName=j.name||"";(j.scores||[]).forEach(s=>my[s.team]=s)}
-function signOut(msg){const pp=$("pins");if(pp){pp.dataset.ready="";pp.innerHTML=""}sess=null;ls("sess",null);my={};board=null;history.replaceState(null,"",location.pathname);route();if(msg)$("loginErr").textContent=msg}
+function loadMine(j){my={};myName=j.name||"";round=j.round??null;(j.scores||[]).forEach(s=>my[s.team]=s)}
+async function refreshMine(force){
+  if(!sess||sess.seat<1)return;
+  try{const j=await rpc("judge_login",creds());
+    if(force||(round!==null&&j.round!==round)){loadMine(j);toast("The organiser cleared all scores. Please score from the start.");status("Scores were cleared by the organiser. Your screen has been reset.",true);if(!$("vScore").hidden)renderScore()}
+    else round=j.round??round;
+  }catch(err){if(err.auth)signOut(err.message)}
+}
+function startMinePoll(){if(!mineH)mineH=setInterval(()=>refreshMine(false),20000)}
+function stopMinePoll(){clearInterval(mineH);mineH=null}
+function signOut(msg){stopMinePoll();const pp=$("pins");if(pp){pp.dataset.ready="";pp.innerHTML=""}sess=null;ls("sess",null);my={};board=null;history.replaceState(null,"",location.pathname);route();if(msg)$("loginErr").textContent=msg}
 
 /* ---------- scoring ---------- */
 function initHowto(){const h=$("howto");if(!h||h.dataset.init)return;h.dataset.init="1";h.open=ls("howto")!=="seen";h.addEventListener("toggle",()=>{if(!h.open)ls("howto","seen")})}
@@ -298,8 +325,8 @@ function save(t,patch){
   const cur=my[t]||{team:t,wow:0,func:0,pres:0,joint:false,note:""};
   const next={...cur,...patch};my[t]=next;
   const el=$("saved");if(el)el.textContent="Saving…";
-  q=q.then(()=>rpc("save_score",{...creds(),p_team:t,p_wow:next.wow||0,p_func:next.func||0,p_pres:next.pres||0,p_joint:!!next.joint,p_note:next.note||""}))
-   .then(r=>{if(my[t])my[t].updated_at=r.at;const e=$("saved");if(e&&t===team)e.textContent="Saved to the server";status("")})
+  q=q.then(()=>rpc("save_score_v2",{...creds(),p_round:round,p_team:t,p_wow:next.wow||0,p_func:next.func||0,p_pres:next.pres||0,p_joint:!!next.joint,p_note:next.note||""}))
+   .then(async r=>{if(r&&r.reset){await refreshMine(true);return}if(my[t])my[t].updated_at=r.at;const e=$("saved");if(e&&t===team)e.textContent="Saved to the server";status("")})
    .catch(err=>{if(err.auth)signOut(err.message);else status("Not saved — check the connection. Tap the score again to retry. ("+err.message+")",true)});
 }
 document.addEventListener("click",e=>{
@@ -312,6 +339,7 @@ document.addEventListener("click",e=>{
   else if(b.id==="tGo"){clk.run?pauseClk():startClk()}
   else if(b.id==="tReset"){pauseClk();clk.left=600;drawClock()}
   else if(b.id==="copyCsv")copyCsv();
+  else if(b.id==="clearBtn")clearAll();
   else if(b.id==="dlCsv")downloadCsv("mahathon26-results",summaryCsv());
   else if(b.id==="dlDetail")downloadCsv("mahathon26-scores-by-judge",detailCsv());
   else if(b.dataset.gen!==undefined){$("np"+b.dataset.gen).value=String(Math.floor(Math.random()*1e6)).padStart(6,"0")}
@@ -359,7 +387,8 @@ function renderRes(){
   $("guide").textContent=CRIT.map(c=>c.t+" — "+c.q+"\n"+c.r.map((x,i)=>"  "+(i+1)+": "+x).join("\n")).join("\n\n")+"\n\n* next to a judge's score = that judge has not scored all three areas yet.";
 }
 function renderPins(){
-  const p=$("pins"),org=sess&&sess.seat===0;p.hidden=!org;
+  const p=$("pins"),org=sess&&sess.seat===0;p.hidden=!org;$("clear").hidden=!org;
+  if(org){const n=((board&&board.scores)||[]).length;$("clearInfo").textContent=(n?n+" score card"+(n===1?"":"s")+" on record. ":"No scores on record. ")+(board&&board.cleared_at?"Last cleared "+new Date(board.cleared_at).toLocaleString([],{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})+".":"")}
   if(!org){p.innerHTML="";p.dataset.ready="";return}
   const rows=[1,2,3].map(j=>({seat:j,label:"Judge "+j,name:jName(j)!==("Judge "+j)?jName(j):""})).concat([{seat:0,label:"Organiser",name:"Your own PIN"}]);
   if(p.dataset.ready){rows.forEach(r=>{const el=p.querySelector(`[data-pinname="${r.seat}"]`);if(el)el.textContent=r.name||"No name yet"});return}
@@ -368,6 +397,15 @@ function renderPins(){
    rows.map(r=>`<div class="pinrow"><div class="lab">${r.label}<small data-pinname="${r.seat}">${esc(r.name||"No name yet")}</small></div>
    <input id="np${r.seat}" inputmode="numeric" maxlength="6" pattern="[0-9]*" placeholder="New PIN" autocomplete="off" aria-label="New PIN for ${r.label}">
    <button class="btn" data-gen="${r.seat}">Random</button><button class="btn pri" data-setpin="${r.seat}">Set</button></div>`).join("");
+}
+async function clearAll(){
+  const w=$("clearWord"),v=w.value.trim();
+  if(v!=="CLEAR"){toast("Type CLEAR (in capitals) to confirm");w.focus();return}
+  const b=$("clearBtn");b.disabled=true;b.textContent="Clearing…";
+  try{const r=await rpc("clear_scores",{...creds(),p_confirm:v,p_reset_names:$("clearNames").checked});
+    w.value="";$("clearNames").checked=false;toast("Cleared "+r.archived+" score card"+(r.archived===1?"":"s")+". Ready for final scoring.");await fetchBoard();
+  }catch(err){if(err.auth&&/Wrong PIN|Too many/.test(err.message))signOut(err.message);else toast(err.message)}
+  finally{b.disabled=false;b.textContent="Clear all scores"}
 }
 async function setPin(target){
   const inp=$("np"+target),v=inp.value.trim();

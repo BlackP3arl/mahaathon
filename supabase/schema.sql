@@ -115,3 +115,94 @@ select p.seat, p.pin from p join ins using (seat) order by seat;
 
 -- To change one PIN later:
 -- update public.judges set pin_hash = extensions.crypt('123456', extensions.gen_salt('bf')), failed = 0, locked_until = null where seat = 1;
+
+-- ---------------------------------------------------------------
+-- Rounds and "Clear all scores" (organiser only)
+-- Clearing archives every score, empties the score table and starts a new round.
+-- Saves from a screen still on the old round are refused, so test scores can't come back.
+create table public.settings(id smallint primary key default 1 check (id = 1), round int not null default 1, cleared_at timestamptz);
+insert into public.settings(id) values (1);
+alter table public.settings enable row level security;
+revoke all on public.settings from anon, authenticated;
+
+create table public.scores_archive(
+  round int not null, seat smallint not null, team smallint not null,
+  wow smallint, func smallint, pres smallint, joint boolean, note text,
+  updated_at timestamptz, archived_at timestamptz not null default now()
+);
+alter table public.scores_archive enable row level security;
+revoke all on public.scores_archive from anon, authenticated;
+
+create or replace function public.judge_login(p_seat int, p_pin text)
+returns json language plpgsql security definer set search_path = public as $$
+declare e text := public._check_pin(p_seat, p_pin);
+begin
+  if e is not null then return json_build_object('error', e); end if;
+  return json_build_object('seat', p_seat, 'name', (select name from public.judges where seat = p_seat),
+    'round', (select round from public.settings where id = 1),
+    'scores', coalesce((select json_agg(s order by team) from (select team, wow, func, pres, joint, note, updated_at from public.scores where seat = p_seat) s), '[]'::json));
+end $$;
+
+-- The original save_score now refuses, so an out-of-date page can't write.
+create or replace function public.save_score(p_seat int, p_pin text, p_team int, p_wow int, p_func int, p_pres int, p_joint boolean, p_note text)
+returns json language plpgsql security definer set search_path = public as $$
+begin
+  return json_build_object('error','The judging app was updated. Reload the page and sign in again.');
+end $$;
+
+create or replace function public.save_score_v2(p_seat int, p_pin text, p_round int, p_team int, p_wow int, p_func int, p_pres int, p_joint boolean, p_note text)
+returns json language plpgsql security definer set search_path = public as $$
+declare e text; t timestamptz := now(); cur int;
+begin
+  if p_seat is null or p_seat not between 1 and 3 then return json_build_object('error','Only judges can score'); end if;
+  e := public._check_pin(p_seat, p_pin);
+  if e is not null then return json_build_object('error', e); end if;
+  select round into cur from public.settings where id = 1;
+  if p_round is distinct from cur then return json_build_object('reset', true, 'round', cur); end if;
+  if p_team is null or p_team not between 1 and 10 then return json_build_object('error','Unknown team'); end if;
+  insert into public.scores(seat, team, wow, func, pres, joint, note, updated_at)
+  values (p_seat, p_team, least(greatest(coalesce(p_wow,0),0),5), least(greatest(coalesce(p_func,0),0),5), least(greatest(coalesce(p_pres,0),0),5),
+          coalesce(p_joint,false), left(coalesce(p_note,''),1000), t)
+  on conflict (seat, team) do update set wow = excluded.wow, func = excluded.func, pres = excluded.pres,
+    joint = excluded.joint, note = excluded.note, updated_at = t;
+  return json_build_object('ok', true, 'at', t);
+end $$;
+
+create or replace function public.clear_scores(p_seat int, p_pin text, p_confirm text, p_reset_names boolean)
+returns json language plpgsql security definer set search_path = public as $$
+declare e text; n int; cur int;
+begin
+  if p_seat is distinct from 0 then return json_build_object('error','Only the organiser can clear scores'); end if;
+  e := public._check_pin(0, p_pin);
+  if e is not null then return json_build_object('error', e); end if;
+  if p_confirm is distinct from 'CLEAR' then return json_build_object('error','Type CLEAR to confirm'); end if;
+  select round into cur from public.settings where id = 1 for update;
+  insert into public.scores_archive(round, seat, team, wow, func, pres, joint, note, updated_at)
+    select cur, seat, team, wow, func, pres, joint, note, updated_at from public.scores;
+  get diagnostics n = row_count;
+  delete from public.scores where true;
+  if coalesce(p_reset_names, false) then update public.judges set name = '' where seat between 1 and 3; end if;
+  update public.settings set round = cur + 1, cleared_at = now() where id = 1;
+  return json_build_object('ok', true, 'archived', n, 'round', cur + 1);
+end $$;
+
+create or replace function public.get_board(p_seat int, p_pin text)
+returns json language plpgsql security definer set search_path = public as $$
+declare e text := public._check_pin(p_seat, p_pin);
+begin
+  if e is not null then return json_build_object('error', e); end if;
+  return json_build_object(
+    'round', (select round from public.settings where id = 1),
+    'cleared_at', (select cleared_at from public.settings where id = 1),
+    'judges', (select json_agg(json_build_object('seat', seat, 'name', name) order by seat) from public.judges where seat between 1 and 3),
+    'scores', coalesce((select json_agg(json_build_object('seat', seat, 'team', team, 'wow', wow, 'func', func, 'pres', pres, 'joint', joint,
+                 'note', case when p_seat = 0 or p_seat = seat then note else null end)) from public.scores), '[]'::json));
+end $$;
+
+revoke all on function public.save_score_v2(int,text,int,int,int,int,int,boolean,text), public.clear_scores(int,text,text,boolean) from public;
+grant execute on function public.save_score_v2(int,text,int,int,int,int,int,boolean,text), public.clear_scores(int,text,text,boolean) to anon, authenticated;
+
+-- To restore archived scores from a round (example: round 1), run as admin:
+-- insert into public.scores(seat, team, wow, func, pres, joint, note, updated_at)
+--   select seat, team, wow, func, pres, joint, note, updated_at from public.scores_archive where round = 1
+--   on conflict (seat, team) do nothing;

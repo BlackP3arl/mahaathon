@@ -16,7 +16,7 @@ That gives 15 points per judge and 45 per team. Ties are broken by Functionality
 
 - `index.html` is the whole app: one static page, no build step.
 - Judges sign in with a seat (Judge 1, 2 or 3) and a 6-digit PIN. No accounts needed.
-- An **Organiser** seat sees results and all notes, and can set new PINs for any seat, but cannot score.
+- An **Organiser** seat sees results and all notes, and can set new PINs for any seat and clear all scores (archived on the server) before final judging, but cannot score.
 - Data lives in Supabase. The tables are closed to the API. Every read and write goes through functions that check the PIN on the server, so a judge can only change their own scores.
 - After 5 wrong PINs, a seat locks for 5 minutes.
 - Results refresh every 5 seconds and need a PIN, so teams can't see rankings early.
