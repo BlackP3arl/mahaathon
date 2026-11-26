@@ -1,6 +1,6 @@
-# mahathon26 judging
+# Mahaathon26 judging
 
-Score sheet for **mahathon26**, the one-day internal hackathon of the Maldives Pension Administration Office (25 November 2026, theme *Vaane*, 10 teams).
+Score sheet for **Mahaathon26**, the one-day internal hackathon of the Maldives Pension Administration Office (25 November 2026, theme *Vaane*, 10 teams).
 
 Three judges score each team on three areas, from 1 to 5 each:
 

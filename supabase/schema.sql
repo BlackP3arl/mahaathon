@@ -1,4 +1,4 @@
--- mahathon26 judging — Supabase schema
+-- Mahaathon26 judging — Supabase schema
 -- Tables are closed to the API; judges read and write only through the PIN-checked functions below.
 
 create extension if not exists pgcrypto with schema extensions;
