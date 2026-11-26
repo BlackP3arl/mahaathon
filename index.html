@@ -142,6 +142,7 @@ details pre{white-space:pre-wrap;color:var(--mut);font-size:13px}
 .scale div{background:#0d1063;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-size:13px;color:var(--mut);text-align:center}
 .scale strong{display:block;font:700 18px "Space Grotesk";color:var(--ink)}
 @media(max-width:600px){.scale{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.scale div{padding:6px 2px;font-size:12px}}
+.dl{display:flex;flex-wrap:wrap;gap:8px}
 .btn.wide{width:100%;margin-top:14px;min-height:52px;font-size:17px}
 </style>
 </head>
@@ -195,7 +196,7 @@ details pre{white-space:pre-wrap;color:var(--mut);font-size:13px}
     <div class="podium" id="podium"></div>
     <div class="scroll"><table id="tbl"></table></div>
     <p class="note">Each judge scores three areas out of 5 (max 15 per judge, 45 per team). Ties are ranked by Functionality, then Wow factor. "Joint" counts the judges who confirmed the product owner and developers presented together. Refreshes every 5 seconds.</p>
-    <div class="row"><span></span><button class="btn" id="copyCsv">Copy results as CSV</button></div>
+    <div class="row"><span class="saved">Download for Excel or Google Sheets</span><span class="dl"><button class="btn pri" id="dlCsv">Download results (.csv)</button> <button class="btn" id="dlDetail">Detailed scores (.csv)</button> <button class="btn" id="copyCsv">Copy</button></span></div>
     <div id="notes"></div>
     <div class="pins" id="pins" hidden></div>
     <details><summary>Scoring guide</summary><pre id="guide"></pre></details>
@@ -311,6 +312,8 @@ document.addEventListener("click",e=>{
   else if(b.id==="tGo"){clk.run?pauseClk():startClk()}
   else if(b.id==="tReset"){pauseClk();clk.left=600;drawClock()}
   else if(b.id==="copyCsv")copyCsv();
+  else if(b.id==="dlCsv")downloadCsv("mahathon26-results",summaryCsv());
+  else if(b.id==="dlDetail")downloadCsv("mahathon26-scores-by-judge",detailCsv());
   else if(b.dataset.gen!==undefined){$("np"+b.dataset.gen).value=String(Math.floor(Math.random()*1e6)).padStart(6,"0")}
   else if(b.dataset.setpin!==undefined)setPin(+b.dataset.setpin);
 });
@@ -338,7 +341,7 @@ function standings(){
   const sc={};((board&&board.scores)||[]).forEach(s=>sc[s.seat+"_"+s.team]=s);
   return TEAMS.map(t=>{const js=[1,2,3].map(j=>sc[j+"_"+t.n]||null);
     const sum=k=>js.reduce((a,s)=>a+(s?s[k]||0:0),0);
-    return{...t,js,total:js.reduce((a,s)=>a+sub(s),0),wow:sum("wow"),func:sum("func"),pres:sum("pres"),joint:js.filter(s=>s&&s.joint).length,n:js.filter(complete).length}
+    return{...t,no:t.n,js,total:js.reduce((a,s)=>a+sub(s),0),wow:sum("wow"),func:sum("func"),pres:sum("pres"),joint:js.filter(s=>s&&s.joint).length,n:js.filter(complete).length}
   }).sort((a,b)=>b.total-a.total||b.func-a.func||b.wow-a.wow||a.n-b.n);
 }
 function renderRes(){
@@ -374,11 +377,35 @@ async function setPin(target){
     toast((target?"Judge "+target:"Your")+" PIN set to "+v);inp.value="";
   }catch(err){if(err.auth&&/Wrong PIN|Too many/.test(err.message))signOut(err.message);else toast(err.message)}
 }
+const csvCell=v=>{let x=String(v??"");if(/^[=+\-@\t\r]/.test(x))x="'"+x;return '"'+x.replace(/"/g,'""')+'"'};
+const toCsv=rows=>rows.map(r=>r.map(csvCell).join(",")).join("\r\n");
+function rankedRows(){
+  const st=standings();let rank=0,prev=null;
+  st.forEach((r,i)=>{const sig=r.total+"_"+r.func+"_"+r.wow;if(sig!==prev)rank=i+1;r.rank=rank;prev=sig});
+  return st;
+}
+function summaryCsv(){
+  const rows=[["Rank","Team no.","Team","Developers","Product owner",...[1,2,3].map(j=>jName(j)+" /15"),"Wow /15","Functionality /15","Presentation /15","Joint (judges)","Judges complete","Total /45"]];
+  rankedRows().forEach(r=>rows.push([r.total?r.rank:"",r.no,r.t,r.d,r.o,...r.js.map(s=>s?sub(s):""),r.wow,r.func,r.pres,r.joint,r.n+"/3",r.total]));
+  return toCsv(rows);
+}
+function detailCsv(){
+  const org=sess&&sess.seat===0;
+  const rows=[["Team no.","Team","Judge","Wow /5","Functionality /5","Presentation /5","Presented jointly","Subtotal /15",...(org?["Notes"]:[])]];
+  TEAMS.forEach(t=>[1,2,3].forEach(j=>{const s=((board&&board.scores)||[]).find(x=>x.seat===j&&x.team===t.n);
+    rows.push([t.n,t.t,jName(j),s?s.wow||"":"",s?s.func||"":"",s?s.pres||"":"",s?(s.joint?"Yes":"No"):"",s?sub(s):"",...(org?[s&&s.note||""]:[])])}));
+  return toCsv(rows);
+}
+function stamp(){const d=new Date(),p=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"-"+p(d.getHours())+p(d.getMinutes())}
+function downloadCsv(name,text){
+  if(!board){toast("Results are still loading");return}
+  const blob=new Blob(["\ufeff"+text],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download=name+"-"+stamp()+".csv";document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);toast("Downloaded "+a.download);
+}
 async function copyCsv(){
-  const qq=v=>'"'+String(v).replace(/"/g,'""')+'"';
-  const rows=[["Rank","Team","Developers","Product owner",...[1,2,3].map(jName),"Wow","Functionality","Presentation","Joint","Total /45"]];
-  standings().forEach((r,i)=>rows.push([i+1,r.t,r.d,r.o,...r.js.map(s=>s?sub(s):""),r.wow,r.func,r.pres,r.joint,r.total]));
-  try{await navigator.clipboard.writeText(rows.map(r=>r.map(qq).join(",")).join("\n"));toast("Results copied")}catch(e){toast("Copy was blocked by the browser")}
+  try{await navigator.clipboard.writeText(summaryCsv());toast("Results copied")}catch(e){toast("Copy was blocked by the browser")}
 }
 
 /* ---------- start ---------- */

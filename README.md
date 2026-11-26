@@ -20,7 +20,7 @@ That gives 15 points per judge and 45 per team. Ties are broken by Functionality
 - Data lives in Supabase. The tables are closed to the API. Every read and write goes through functions that check the PIN on the server, so a judge can only change their own scores.
 - After 5 wrong PINs, a seat locks for 5 minutes.
 - Results refresh every 5 seconds and need a PIN, so teams can't see rankings early.
-- Includes a 10-minute presentation timer and a CSV export of the results.
+- Includes a 10-minute presentation timer, and CSV downloads of the ranked results and of every judge's scores (with notes for the organiser).
 
 ## Deploy
 
